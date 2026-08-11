@@ -72,6 +72,7 @@ fn build_runs(
 pub fn Input(
     value: String,
     on_change: EventHandler<Box<str>>,
+    active: bool,
     #[props(default)] placeholder: String,
     #[props(default)] style: ContentStyle,
 ) -> Element {
@@ -87,6 +88,9 @@ pub fn Input(
     // `Signal::set` needs `&mut self`, which an `Fn` closure can't give its captures, so writes
     // here go through `write_unchecked` (`&self`) instead.
     use_key_event(move |e: KeyEvent| {
+        if !active {
+            return;
+        }
         if !e.is_press() && !e.is_repeat() {
             return;
         }
@@ -191,7 +195,7 @@ pub fn Input(
     });
 
     let selection = selection_range(cursor().min(len), anchor().map(|a| a.min(len)));
-    let cursor_style = style.reverse();
+    let cursor_style = if active { style.reverse() } else { no!() };
     let selection_style = style.on_dark_grey();
 
     let runs = if chars.is_empty() {

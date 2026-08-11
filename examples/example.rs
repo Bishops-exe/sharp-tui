@@ -57,6 +57,7 @@ fn app() -> Element {
             }
             Block {
                 Input {
+                    active: true,
                     value: input_value(),
                     on_change: move |x: Box<str>| {
                         input_value.set(x.into());
