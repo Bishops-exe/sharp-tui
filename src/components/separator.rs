@@ -4,8 +4,8 @@ use dioxus::prelude::*;
 
 #[derive(Eq, PartialEq, Clone, Debug)]
 pub struct SeparatorCharset {
-    horizontal: Cell,
-    vertical: Cell,
+    pub horizontal: Cell,
+    pub vertical: Cell,
 }
 
 impl SeparatorCharset {
