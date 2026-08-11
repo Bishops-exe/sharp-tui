@@ -13,9 +13,22 @@ use yoga::{Direction, MeasureMode, NodeRef, Size};
 
 pub(super) type Layouts = RefCell<HashMap<NodeKey, LayoutRect>>;
 
+/// A single character together with the (already-merged) style it should paint with. Building
+/// a flat run of these out of a `Text` node's whole subtree is what lets a `Text` nest other
+/// `Text` spans for multi-style content while still wrapping/measuring as one paragraph.
+#[derive(Clone, Copy)]
+struct StyledChar {
+    ch: char,
+    style: ContentStyle,
+}
+
 struct TextContext {
-    content: String,
+    chars: Vec<StyledChar>,
     wrap: TextWrap,
+    /// The node's own `style`, used for measurement (where styling is irrelevant to size) and as
+    /// the style of any `...` an ellipsis-style `TextWrap` inserts, since that punctuation isn't
+    /// part of any particular nested span.
+    fallback_style: ContentStyle,
 }
 
 extern "C" fn measure_text(
@@ -38,48 +51,213 @@ extern "C" fn measure_text(
         MeasureMode::Undefined => usize::MAX,
         _ => width.max(0.0).round() as usize,
     };
-    let wrapped = ctx.wrap.process(&ctx.content, available);
-    let measured_width = wrapped
-        .lines()
-        .map(|line| line.chars().count())
-        .max()
-        .unwrap_or(0) as f32;
-    let measured_height = wrapped.lines().count() as f32;
+    let wrapped = wrap_styled(ctx.wrap, &ctx.chars, available, ctx.fallback_style);
+    let measured_width = wrapped.iter().map(Vec::len).max().unwrap_or(0) as f32;
+    let measured_height = wrapped.len() as f32;
     Size {
         width: measured_width,
         height: measured_height,
     }
 }
 
-/// Concatenates the bare-text children of a `Text` node (the literal content of e.g.
-/// `Text { "hi" }`); nested `Block`/`Text` children are laid out independently and skipped.
-fn aggregate_content(arena: &Arena, key: NodeKey) -> String {
-    let mut content = String::new();
+/// Merges a nested span's own `style` onto its ancestor's: colors set on the span win, unset
+/// ones fall back to the ancestor's; attributes (bold, italic, ...) from both apply together.
+fn merge_style(parent: ContentStyle, child: ContentStyle) -> ContentStyle {
+    ContentStyle {
+        foreground_color: child.foreground_color.or(parent.foreground_color),
+        background_color: child.background_color.or(parent.background_color),
+        underline_color: child.underline_color.or(parent.underline_color),
+        attributes: parent.attributes | child.attributes,
+    }
+}
+
+/// Flattens a `Text` node's subtree into a single run of styled characters: bare text
+/// (`RawText`) contributes its content at `style`, and a nested `Text` span contributes its own
+/// subtree recursively, at `style` merged with that span's own `style`. This is what lets a
+/// `Text` node contain other `Text` nodes purely as inline style spans, rather than as
+/// independently laid-out boxes.
+fn collect_styled(arena: &Arena, key: NodeKey, style: ContentStyle, out: &mut Vec<StyledChar>) {
     for &child in arena.get(key).children() {
-        if let RealNode::RawText { content: c, .. } = arena.get(child) {
-            content.push_str(c);
+        match arena.get(child) {
+            RealNode::RawText { content, .. } => {
+                out.extend(content.chars().map(|ch| StyledChar { ch, style }));
+            }
+            RealNode::Text { style: span, .. } => {
+                collect_styled(arena, child, merge_style(style, *span), out);
+            }
+            RealNode::Block { .. } | RealNode::Placeholder { .. } => panic!(
+                "Text node has a non-RawText/Text child; Text can only contain bare text or nested Text spans, not Block/etc."
+            ),
         }
     }
-    content
+}
+
+/// Splits `chars` on literal `\n`s, mirroring `str::lines`: a blank line in the middle survives
+/// as an empty slice, a trailing newline does not produce a trailing empty one.
+fn split_on_newline(chars: &[StyledChar]) -> Vec<&[StyledChar]> {
+    let mut paragraphs = Vec::new();
+    let mut start = 0;
+    for (i, sc) in chars.iter().enumerate() {
+        if sc.ch == '\n' {
+            paragraphs.push(&chars[start..i]);
+            start = i + 1;
+        }
+    }
+    if start < chars.len() {
+        paragraphs.push(&chars[start..]);
+    }
+    paragraphs
+}
+
+/// Greedily packs whitespace-separated words from `paragraph` onto lines no wider than `width`,
+/// normalizing runs of whitespace between words to a single space of `space_style` — the styled
+/// analogue of `textwrap::fill`.
+fn wrap_words(
+    paragraph: &[StyledChar],
+    width: usize,
+    space_style: ContentStyle,
+) -> Vec<Vec<StyledChar>> {
+    let mut lines = Vec::new();
+    let mut current: Vec<StyledChar> = Vec::new();
+    let mut i = 0;
+    while i < paragraph.len() {
+        while i < paragraph.len() && paragraph[i].ch.is_whitespace() {
+            i += 1;
+        }
+        let word_start = i;
+        while i < paragraph.len() && !paragraph[i].ch.is_whitespace() {
+            i += 1;
+        }
+        let word = &paragraph[word_start..i];
+        if word.is_empty() {
+            continue;
+        }
+        if current.is_empty() {
+            current.extend_from_slice(word);
+        } else if current.len() + 1 + word.len() <= width {
+            current.push(StyledChar {
+                ch: ' ',
+                style: space_style,
+            });
+            current.extend_from_slice(word);
+        } else {
+            lines.push(std::mem::take(&mut current));
+            current.extend_from_slice(word);
+        }
+    }
+    if !current.is_empty() {
+        lines.push(current);
+    }
+    if lines.is_empty() {
+        lines.push(Vec::new());
+    }
+    lines
+}
+
+/// Wraps a single paragraph (no embedded newlines) per `mode`, the styled analogue of
+/// [`TextWrap::process`](crate::props::TextWrap::process). `fallback_style` styles any `...` an
+/// ellipsis mode inserts.
+fn wrap_paragraph(
+    mode: TextWrap,
+    paragraph: &[StyledChar],
+    width: usize,
+    fallback_style: ContentStyle,
+) -> Vec<Vec<StyledChar>> {
+    if paragraph.is_empty() {
+        return vec![Vec::new()];
+    }
+    if paragraph.len() <= width {
+        return vec![paragraph.to_vec()];
+    }
+
+    let dot = || StyledChar {
+        ch: '.',
+        style: fallback_style,
+    };
+
+    match mode {
+        TextWrap::Wrap => wrap_words(paragraph, width, fallback_style),
+        TextWrap::Hard => paragraph
+            .chunks(width)
+            .map(<[StyledChar]>::to_vec)
+            .collect(),
+        TextWrap::TruncateStart => {
+            if width <= 3 {
+                return vec![paragraph[paragraph.len() - width..].to_vec()];
+            }
+            let keep = width - 3;
+            let mut row = vec![dot(); 3];
+            row.extend_from_slice(&paragraph[paragraph.len() - keep..]);
+            vec![row]
+        }
+        TextWrap::TruncateMiddle => {
+            if width <= 3 {
+                return vec![paragraph[..width].to_vec()];
+            }
+            let keep = width - 3;
+            let half = keep / 2;
+            let extra = keep % 2;
+            let mut row = paragraph[..half + extra].to_vec();
+            row.extend(std::iter::repeat_with(dot).take(3));
+            row.extend_from_slice(&paragraph[paragraph.len() - half..]);
+            vec![row]
+        }
+        TextWrap::Truncate => {
+            if width <= 3 {
+                return vec![paragraph[..width].to_vec()];
+            }
+            let keep = width - 3;
+            let mut row = paragraph[..keep].to_vec();
+            row.extend(std::iter::repeat_with(dot).take(3));
+            vec![row]
+        }
+        TextWrap::Cut => vec![paragraph[..width].to_vec()],
+    }
+}
+
+/// The styled analogue of `TextWrap::process`: wraps/truncates `chars` per `mode`, returning one
+/// row of styled characters per resulting line. `measure_text` and `draw_text` both call this
+/// (never the plain-`str` `TextWrap::process`), so a `Text` node's measured size and its painted
+/// content are always derived from the exact same wrapping — they can't drift apart.
+fn wrap_styled(
+    mode: TextWrap,
+    chars: &[StyledChar],
+    width: usize,
+    fallback_style: ContentStyle,
+) -> Vec<Vec<StyledChar>> {
+    if width == 0 {
+        return split_on_newline(chars)
+            .into_iter()
+            .map(<[StyledChar]>::to_vec)
+            .collect();
+    }
+    split_on_newline(chars)
+        .into_iter()
+        .flat_map(|paragraph| wrap_paragraph(mode, paragraph, width, fallback_style))
+        .collect()
 }
 
 fn sync_measure_contexts(arena: &mut Arena, key: NodeKey) {
-    let children: Vec<NodeKey> = arena.get(key).children().to_vec();
-    for child in children {
-        sync_measure_contexts(arena, child);
+    // A `Text` node's children are inline spans folded into its own content by `collect_styled`
+    // below, not independent layout boxes, so (unlike a `Block`'s or the root's) they're never
+    // walked generically here.
+    if !matches!(arena.get(key), RealNode::Text { .. }) {
+        let children: Vec<NodeKey> = arena.get(key).children().to_vec();
+        for child in children {
+            sync_measure_contexts(arena, child);
+        }
     }
 
-    if let RealNode::Text { wrap, .. } = arena.get(key) {
-        for &child in arena.get(key).children() {
-            assert!(
-                matches!(arena.get(child), RealNode::RawText { .. }),
-                "Text node has a non-RawText child; Text can only contain bare text, not nested Block/Text/etc."
-            );
-        }
+    if let RealNode::Text { style, wrap, .. } = arena.get(key) {
+        let fallback_style = *style;
+        let wrap = *wrap;
+        let mut chars = Vec::new();
+        collect_styled(arena, key, fallback_style, &mut chars);
 
         let context = TextContext {
-            content: aggregate_content(arena, key),
-            wrap: *wrap,
+            chars,
+            wrap,
+            fallback_style,
         };
         if let RealNode::Text { yoga, .. } = arena.get_mut(key) {
             yoga.set_context(Some(yoga::Context::new(context)));
@@ -210,18 +388,23 @@ fn draw_text(
     buffer: &mut Buffer,
     clip: Option<LayoutRect>,
     rect: &LayoutRect,
-    content: &str,
-    style: &ContentStyle,
-    wrap: &TextWrap,
+    chars: &[StyledChar],
+    wrap: TextWrap,
+    fallback_style: ContentStyle,
 ) {
-    let wrapped = wrap.process(content, (rect.second.x - rect.first.x) as usize);
-    for (row, line) in wrapped.lines().enumerate() {
-        for (col, ch) in line.chars().enumerate() {
+    let wrapped = wrap_styled(
+        wrap,
+        chars,
+        (rect.second.x - rect.first.x) as usize,
+        fallback_style,
+    );
+    for (row, line) in wrapped.iter().enumerate() {
+        for (col, sc) in line.iter().enumerate() {
             set_clipped_unsure(
                 buffer,
                 clip,
                 Point::new(rect.first.x + col as i32, rect.first.y + row as i32),
-                Cell::new(style.apply(ch)),
+                Cell::new(sc.style.apply(sc.ch)),
             );
         }
     }
@@ -254,6 +437,16 @@ fn paint_node(
     if matches!(node, RealNode::RawText { .. }) {
         return;
     }
+    // A `Text` node nested inside another `Text` is an inline span, not an independent layout
+    // box (see `Arena::attach`): its content was already painted as part of its ancestor's own
+    // `draw_text` call, and it has no yoga-tree position of its own to paint at here.
+    if matches!(node, RealNode::Text { .. })
+        && node
+            .parent()
+            .is_some_and(|parent| matches!(arena.get(parent), RealNode::Text { .. }))
+    {
+        return;
+    }
 
     let (yoga, children) = (node.yoga().unwrap(), node.children());
     let layout: LayoutRect = yoga.get_layout().into();
@@ -279,8 +472,9 @@ fn paint_node(
             }
         }
         RealNode::Text { style, wrap, .. } => {
-            let content = aggregate_content(arena, key);
-            draw_text(buffer, clip, &rect, &content, style, wrap);
+            let mut chars = Vec::new();
+            collect_styled(arena, key, *style, &mut chars);
+            draw_text(buffer, clip, &rect, &chars, *wrap, *style);
             clip
         }
         _ => clip,
@@ -404,4 +598,133 @@ pub(super) fn paint(
     out.queue(crossterm::style::ResetColor)?;
     out.flush()?;
     Ok(changed)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crossterm::style::{Attribute, Color, Stylize};
+    use yoga::Node as YogaNode;
+
+    fn set_style(arena: &mut Arena, key: NodeKey, style: ContentStyle) {
+        if let RealNode::Text { style: s, .. } = arena.get_mut(key) {
+            *s = style;
+        } else {
+            panic!("not a Text node");
+        }
+    }
+
+    /// `Text { "Hello " Text { style: bold, "world" } "!" }`, with the outer `Text` styled green.
+    fn build_text_tree() -> (Arena, NodeKey) {
+        let mut arena = Arena::default();
+        let root = arena.insert(RealNode::text(YogaNode::new()));
+        set_style(&mut arena, root, ContentStyle::default().green());
+
+        let plain1 = arena.insert(RealNode::raw_text("Hello ".to_string()));
+        arena.attach(root, plain1, 0);
+
+        let span = arena.insert(RealNode::text(YogaNode::new()));
+        set_style(&mut arena, span, ContentStyle::default().bold());
+        let span_text = arena.insert(RealNode::raw_text("world".to_string()));
+        arena.attach(span, span_text, 0);
+        arena.attach(root, span, 1);
+
+        let plain2 = arena.insert(RealNode::raw_text("!".to_string()));
+        arena.attach(root, plain2, 2);
+
+        (arena, root)
+    }
+
+    #[test]
+    fn nested_text_span_flattens_and_inherits_style() {
+        let (arena, root) = build_text_tree();
+        let mut chars = Vec::new();
+        collect_styled(&arena, root, ContentStyle::default().green(), &mut chars);
+
+        let text: String = chars.iter().map(|sc| sc.ch).collect();
+        assert_eq!(text, "Hello world!");
+
+        for (i, sc) in chars.iter().enumerate() {
+            // "world" is chars[6..11]: bold from the span, but still green — inherited from the
+            // ancestor `Text` since the span itself never set a foreground color.
+            let in_span = (6..11).contains(&i);
+            assert_eq!(sc.style.attributes.has(Attribute::Bold), in_span);
+            assert_eq!(sc.style.foreground_color, Some(Color::Green));
+        }
+    }
+
+    #[test]
+    fn nested_text_span_is_excluded_from_yoga_tree() {
+        let (mut arena, root) = build_text_tree();
+        let root_yoga = arena.get_mut(root).yoga_mut().unwrap();
+        assert_eq!(
+            root_yoga.child_count(),
+            0,
+            "spans/bare text must never be wired into the yoga tree"
+        );
+
+        // Detaching a never-wired span must not panic trying to remove a yoga child it never had.
+        let span = arena.get(root).children()[1];
+        arena.detach(span);
+        assert_eq!(arena.get(root).children().len(), 2);
+    }
+
+    #[test]
+    fn wrap_styled_word_wrap_preserves_per_char_style() {
+        let plain = ContentStyle::default();
+        let bold = ContentStyle::default().bold();
+        let chars: Vec<StyledChar> = "Hello "
+            .chars()
+            .map(|ch| StyledChar { ch, style: plain })
+            .chain("world".chars().map(|ch| StyledChar { ch, style: bold }))
+            .collect();
+
+        let rows = wrap_styled(TextWrap::Wrap, &chars, 5, plain);
+        let text: Vec<String> = rows
+            .iter()
+            .map(|r| r.iter().map(|sc| sc.ch).collect())
+            .collect();
+        assert_eq!(text, vec!["Hello", "world"]);
+        assert!(
+            rows[1]
+                .iter()
+                .all(|sc| sc.style.attributes.has(Attribute::Bold))
+        );
+        assert!(
+            rows[0]
+                .iter()
+                .all(|sc| !sc.style.attributes.has(Attribute::Bold))
+        );
+    }
+
+    #[test]
+    fn wrap_styled_preserves_blank_lines() {
+        let plain = ContentStyle::default();
+        let chars: Vec<StyledChar> = "a\n\nb"
+            .chars()
+            .map(|ch| StyledChar { ch, style: plain })
+            .collect();
+        let rows = wrap_styled(TextWrap::Wrap, &chars, 10, plain);
+        let text: Vec<String> = rows
+            .iter()
+            .map(|r| r.iter().map(|sc| sc.ch).collect())
+            .collect();
+        assert_eq!(text, vec!["a", "", "b"]);
+    }
+
+    #[test]
+    fn truncate_uses_fallback_style_for_ellipsis() {
+        let plain = ContentStyle::default();
+        let fallback = ContentStyle::default().bold();
+        let chars: Vec<StyledChar> = "abcdefghij"
+            .chars()
+            .map(|ch| StyledChar { ch, style: plain })
+            .collect();
+        let rows = wrap_styled(TextWrap::Truncate, &chars, 6, fallback);
+        assert_eq!(rows.len(), 1);
+        let text: String = rows[0].iter().map(|sc| sc.ch).collect();
+        assert_eq!(text, "abc...");
+        assert!(rows[0][3..].iter().all(|sc| sc.style == fallback));
+        assert!(rows[0][..3].iter().all(|sc| sc.style == plain));
+    }
 }

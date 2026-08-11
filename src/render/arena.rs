@@ -184,12 +184,19 @@ impl Arena {
         };
         let mut child = self.take(child_key);
 
+        // A `Text` node's children (bare text or nested `Text` spans) are folded into its own
+        // content at paint time rather than laid out independently, so they're never wired into
+        // the yoga tree in the first place — see the matching check in `attach` below.
+        let parent_is_text = matches!(self.get(parent_key), RealNode::Text { .. });
+
         {
             let parent = self.get_mut(parent_key);
             if let Some(children) = parent.children_mut() {
                 children.retain(|k| *k != child_key);
             }
-            if let (Some(parent_yoga), Some(child_yoga)) = (parent.yoga_mut(), child.yoga_mut()) {
+            if !parent_is_text
+                && let (Some(parent_yoga), Some(child_yoga)) = (parent.yoga_mut(), child.yoga_mut())
+            {
                 parent_yoga.remove_child(child_yoga);
             }
         }
@@ -199,13 +206,20 @@ impl Arena {
     }
 
     /// Attach `child_key` as the `index`-th child of `parent_key`, wiring the yoga tree so that
-    /// yoga-less siblings (bare text) don't throw off the layout child order.
+    /// yoga-less siblings (bare text) don't throw off the layout child order. If `parent_key` is
+    /// itself a `Text` node, `child_key` is kept out of the yoga tree entirely: `Text` children
+    /// (bare text or nested `Text` spans, used for multi-style content) are inline content
+    /// folded into their ancestor's own paint, not independent layout boxes.
     pub(super) fn attach(&mut self, parent_key: NodeKey, child_key: NodeKey, index: usize) {
         self.detach(child_key);
         let mut child = self.take(child_key);
         child.set_parent(Some(parent_key));
 
-        let yoga_index = {
+        let parent_is_text = matches!(self.get(parent_key), RealNode::Text { .. });
+
+        let yoga_index = if parent_is_text {
+            0
+        } else {
             let parent = self.get(parent_key);
             parent
                 .children()
@@ -221,7 +235,9 @@ impl Arena {
                 let at = index.min(children.len());
                 children.insert(at, child_key);
             }
-            if let (Some(parent_yoga), Some(child_yoga)) = (parent.yoga_mut(), child.yoga_mut()) {
+            if !parent_is_text
+                && let (Some(parent_yoga), Some(child_yoga)) = (parent.yoga_mut(), child.yoga_mut())
+            {
                 parent_yoga.insert_child(child_yoga, yoga_index);
             }
         }

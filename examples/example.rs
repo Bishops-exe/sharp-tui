@@ -8,8 +8,8 @@ use sharp_tui::components::{
 };
 use sharp_tui::components::{Select, SelectOption};
 use sharp_tui::props::*;
-use sharp_tui::yoga;
 use sharp_tui::{Block, Props, launch, no};
+use sharp_tui::{Text, yoga};
 use std::time::Duration;
 use yoga::StyleUnit;
 
@@ -90,6 +90,15 @@ fn app() -> Element {
                         }
                     }
                 }
+            }
+            Text {
+                style: ContentStyle::new().red().bold(),
+                "Funny how i am "
+                Text {
+                    style: ContentStyle::new().green(),
+                    "green"
+                }
+                " and your not"
             }
         }
 
