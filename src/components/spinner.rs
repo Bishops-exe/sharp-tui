@@ -1,8 +1,8 @@
 use crate::{Block, Text};
+use crossterm::style::ContentStyle;
 use dioxus::prelude::*;
 use dioxus_sdk_time::use_interval;
 use std::time::Duration;
-use crossterm::style::ContentStyle;
 
 #[derive(Eq, PartialEq, Clone, Debug)]
 pub struct SpinnerCharset {

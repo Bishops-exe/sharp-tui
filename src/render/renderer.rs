@@ -79,7 +79,14 @@ impl TerminalRenderer {
         width: u32,
         height: u32,
     ) -> io::Result<Vec<(NodeKey, LayoutRect)>> {
-        paint::paint(&mut self.screen, &mut self.arena, self.root, out, Point::new(width as i32, height as i32), &self.layouts)
+        paint::paint(
+            &mut self.screen,
+            &mut self.arena,
+            self.root,
+            out,
+            Point::new(width as i32, height as i32),
+            &self.layouts,
+        )
     }
 
     /// Drains the elements that registered an `onmounted` listener since the last call, pairing
@@ -98,7 +105,10 @@ impl TerminalRenderer {
     /// `measure_element` — i.e. the scopes that need to be re-rendered to see the new layout.
     pub(super) fn scopes_for(&self, changed: &[(NodeKey, LayoutRect)]) -> Vec<ScopeId> {
         let resize_scopes = self.resize_scopes.borrow();
-        changed.iter().filter_map(|(key, _)| resize_scopes.get(key).copied()).collect()
+        changed
+            .iter()
+            .filter_map(|(key, _)| resize_scopes.get(key).copied())
+            .collect()
     }
 
     /// Every currently-subscribed `use_key_event` handler, snapshotted so the caller can run them
@@ -122,7 +132,10 @@ impl TerminalRenderer {
 
     /// `path` is relative to whatever is currently on top of the stack.
     fn resolve_path(&self, path: &[u8]) -> NodeKey {
-        let mut current = *self.stack.last().expect("no node on stack to resolve a path against");
+        let mut current = *self
+            .stack
+            .last()
+            .expect("no node on stack to resolve a path against");
         for &index in path {
             current = self.arena.get(current).children()[index as usize];
         }
@@ -143,8 +156,12 @@ impl TerminalRenderer {
                 }
                 key
             }
-            TemplateNode::Text { text } => self.arena.insert(RealNode::raw_text((*text).to_string())),
-            TemplateNode::Dynamic { .. } => self.arena.insert(RealNode::placeholder(YogaNode::new())),
+            TemplateNode::Text { text } => {
+                self.arena.insert(RealNode::raw_text((*text).to_string()))
+            }
+            TemplateNode::Dynamic { .. } => {
+                self.arena.insert(RealNode::placeholder(YogaNode::new()))
+            }
         }
     }
 
@@ -152,7 +169,13 @@ impl TerminalRenderer {
     fn splice(&mut self, target: NodeKey, new_nodes: Vec<NodeKey>) {
         match self.arena.get(target).parent() {
             Some(parent) => {
-                let index = self.arena.get(parent).children().iter().position(|k| *k == target).expect("target not among its parent's children");
+                let index = self
+                    .arena
+                    .get(parent)
+                    .children()
+                    .iter()
+                    .position(|k| *k == target)
+                    .expect("target not among its parent's children");
                 self.arena.remove_subtree(target);
                 for (offset, node) in new_nodes.into_iter().enumerate() {
                     self.arena.attach(parent, node, index + offset);
@@ -172,7 +195,10 @@ impl Default for TerminalRenderer {
 impl WriteMutations for TerminalRenderer {
     fn append_children(&mut self, id: ElementId, m: usize) {
         self.dirty = true;
-        let parent = *self.id_to_nodekey.get_by_left(&id).expect("parent not found");
+        let parent = *self
+            .id_to_nodekey
+            .get_by_left(&id)
+            .expect("parent not found");
         let nodes = self.pop_n(m);
         let start_index = self.arena.get(parent).children().len();
         for (offset, node) in nodes.into_iter().enumerate() {
@@ -209,7 +235,11 @@ impl WriteMutations for TerminalRenderer {
     fn replace_node_with(&mut self, id: ElementId, m: usize) {
         self.dirty = true;
         let nodes = self.pop_n(m);
-        let target = self.id_to_nodekey.remove_by_left(&id).expect("target not found").1;
+        let target = self
+            .id_to_nodekey
+            .remove_by_left(&id)
+            .expect("target not found")
+            .1;
         self.splice(target, nodes);
     }
 
@@ -223,9 +253,23 @@ impl WriteMutations for TerminalRenderer {
     fn insert_nodes_after(&mut self, id: ElementId, m: usize) {
         self.dirty = true;
         let nodes = self.pop_n(m);
-        let anchor = *self.id_to_nodekey.get_by_left(&id).expect("anchor not found");
-        let parent = self.arena.get(anchor).parent().expect("insert_nodes_after on a node with no parent");
-        let index = self.arena.get(parent).children().iter().position(|k| *k == anchor).unwrap() + 1;
+        let anchor = *self
+            .id_to_nodekey
+            .get_by_left(&id)
+            .expect("anchor not found");
+        let parent = self
+            .arena
+            .get(anchor)
+            .parent()
+            .expect("insert_nodes_after on a node with no parent");
+        let index = self
+            .arena
+            .get(parent)
+            .children()
+            .iter()
+            .position(|k| *k == anchor)
+            .unwrap()
+            + 1;
         for (offset, node) in nodes.into_iter().enumerate() {
             self.arena.attach(parent, node, index + offset);
         }
@@ -234,27 +278,56 @@ impl WriteMutations for TerminalRenderer {
     fn insert_nodes_before(&mut self, id: ElementId, m: usize) {
         self.dirty = true;
         let nodes = self.pop_n(m);
-        let anchor = *self.id_to_nodekey.get_by_left(&id).expect("anchor not found");
-        let parent = self.arena.get(anchor).parent().expect("insert_nodes_before on a node with no parent");
-        let index = self.arena.get(parent).children().iter().position(|k| *k == anchor).unwrap();
+        let anchor = *self
+            .id_to_nodekey
+            .get_by_left(&id)
+            .expect("anchor not found");
+        let parent = self
+            .arena
+            .get(anchor)
+            .parent()
+            .expect("insert_nodes_before on a node with no parent");
+        let index = self
+            .arena
+            .get(parent)
+            .children()
+            .iter()
+            .position(|k| *k == anchor)
+            .unwrap();
         for (offset, node) in nodes.into_iter().enumerate() {
             self.arena.attach(parent, node, index + offset);
         }
     }
 
-    fn set_attribute(&mut self, name: &'static str, _ns: Option<&'static str>, value: &AttributeValue, id: ElementId) {
+    fn set_attribute(
+        &mut self,
+        name: &'static str,
+        _ns: Option<&'static str>,
+        value: &AttributeValue,
+        id: ElementId,
+    ) {
         self.dirty = true;
-        let Some(&key) = self.id_to_nodekey.get_by_left(&id) else { return };
+        let Some(&key) = self.id_to_nodekey.get_by_left(&id) else {
+            return;
+        };
         match self.arena.get_mut(key) {
-            RealNode::Block { yoga, border, bg_color, overflow, .. } => apply_block_attribute(yoga, border, bg_color, overflow, name, value),
+            RealNode::Block {
+                yoga,
+                border,
+                bg_color,
+                overflow,
+                ..
+            } => apply_block_attribute(yoga, border, bg_color, overflow, name, value),
             RealNode::Text { style, wrap, .. } => apply_text_attribute(style, wrap, name, value),
-            RealNode::RawText { .. } | RealNode::Placeholder { .. } => unreachable!()
+            RealNode::RawText { .. } | RealNode::Placeholder { .. } => unreachable!(),
         }
     }
 
     fn set_node_text(&mut self, value: &str, id: ElementId) {
         self.dirty = true;
-        let Some(&key) = self.id_to_nodekey.get_by_left(&id) else { return };
+        let Some(&key) = self.id_to_nodekey.get_by_left(&id) else {
+            return;
+        };
         if let RealNode::RawText { content, .. } = self.arena.get_mut(key) {
             *content = value.to_string();
         }

@@ -1,6 +1,6 @@
-use std::ops::Deref;
 use crate::no;
 use crossterm::style::StyledContent;
+use std::ops::Deref;
 
 /// One terminal cell's intended contents. Compared frame-to-frame so `paint` only writes cells
 /// that actually changed, instead of clearing and redrawing the whole screen every time.

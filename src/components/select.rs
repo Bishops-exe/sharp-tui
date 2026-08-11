@@ -1,5 +1,7 @@
 use crate::components::Scrolling;
-use crate::{measure_element, use_key_event, Block, Height, KeyEvent, NodeId, Text, Width, XYProps, no};
+use crate::{
+    Block, Height, KeyEvent, NodeId, Text, Width, XYProps, measure_element, no, use_key_event,
+};
 use crossterm::event::KeyCode;
 use crossterm::style::{ContentStyle, Stylize};
 use dioxus::prelude::*;
@@ -27,7 +29,8 @@ pub fn Select(
     on_enter: EventHandler<u32>,
     /// Whether this `Select` should react to `Up`/`Down`/`Enter`. Keep this in sync with whatever
     /// your app considers "focused" — e.g. only the active field in a form.
-    #[props(default)] active: bool,
+    #[props(default)]
+    active: bool,
     #[props(default)] width: Width,
     #[props(default)] height: Height,
 ) -> Element {
@@ -73,13 +76,21 @@ pub fn Select(
     };
 
     let viewport_rect = rect();
-    let option_rect = nodes.borrow().get(&selected()).copied().and_then(measure_element);
+    let option_rect = nodes
+        .borrow()
+        .get(&selected())
+        .copied()
+        .and_then(measure_element);
     if let Some(option_rect) = option_rect {
         let mut offset = scroll();
         if option_rect.first.y < viewport_rect.first.y {
-            offset.y = offset.y.saturating_sub((viewport_rect.first.y - option_rect.first.y) as u16);
+            offset.y = offset
+                .y
+                .saturating_sub((viewport_rect.first.y - option_rect.first.y) as u16);
         } else if option_rect.second.y > viewport_rect.second.y {
-            offset.y = offset.y.saturating_add((option_rect.second.y - viewport_rect.second.y) as u16);
+            offset.y = offset
+                .y
+                .saturating_add((option_rect.second.y - viewport_rect.second.y) as u16);
         }
         if offset != scroll() {
             scroll.set(offset);

@@ -74,8 +74,8 @@ impl LayoutRect {
     }
     pub fn inset(&self, amount: i32) -> LayoutRect {
         Self {
-            first: self.first + Point::new(amount,amount),
-            second: self.second - Point::new(amount, amount)
+            first: self.first + Point::new(amount, amount),
+            second: self.second - Point::new(amount, amount),
         }
     }
 
@@ -101,7 +101,6 @@ impl LayoutRect {
         }
     }
 }
-
 
 /// Opaque handle to a node, delivered by `onmounted`. Pass it to [`measure_element`] — there's
 /// nothing platform-specific to call on the id itself, unlike a DOM ref.

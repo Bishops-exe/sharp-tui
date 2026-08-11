@@ -63,24 +63,21 @@ impl<T: Copy> Sides<T> {
             self.get_pair(Edge::Bottom).unwrap(),
         ]
     }
-    
+
     pub fn rotate_90(&self) -> Sides<T> {
         Self {
             left: self.bottom,
             top: self.left,
             right: self.top,
-            bottom: self.right
+            bottom: self.right,
         }
     }
 
     pub fn rotate_180(&self) -> Sides<T> {
         self.rotate_90().rotate_90()
     }
-    
+
     pub fn rotate_270(&self) -> Sides<T> {
         self.rotate_180().rotate_90()
     }
-    
-    
-    
 }

@@ -32,7 +32,7 @@ macro_rules! wrap {
             }
         }
     };
-    
+
     ($vis:vis $name:ident => $target:ty) => {
         $crate::wrap!($vis $name => $target; default Default::default());
     }

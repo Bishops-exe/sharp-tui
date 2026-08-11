@@ -29,7 +29,8 @@ pub fn Block(
     /// element's layout changes (typically the component's own render body, not just here) —
     /// the renderer re-renders whichever scope last measured a node whenever that node's
     /// position or size actually changes, no separate resize listener needed.
-    #[props(default)] on_mounted: EventHandler<NodeId>,
+    #[props(default)]
+    on_mounted: EventHandler<NodeId>,
     children: Element,
 ) -> Element {
     rsx! {

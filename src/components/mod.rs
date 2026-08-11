@@ -6,12 +6,12 @@ mod input;
 mod progressbar;
 #[cfg(feature = "scrolling")]
 mod scrolling;
-#[cfg(feature = "spinner")]
-mod spinner;
-#[cfg(feature = "separator")]
-mod separator;
 #[cfg(feature = "select")]
 mod select;
+#[cfg(feature = "separator")]
+mod separator;
+#[cfg(feature = "spinner")]
+mod spinner;
 
 #[cfg(feature = "button")]
 pub use button::Button;
@@ -23,18 +23,17 @@ pub use progressbar::ProgressBar;
 pub use progressbar::ProgressBarCharset;
 #[cfg(feature = "scrolling")]
 pub use scrolling::Scrolling;
-#[cfg(feature = "spinner")]
-pub use spinner::Spinner;
-#[cfg(feature = "spinner")]
-pub use spinner::SpinnerCharset;
-#[cfg(feature = "separator")]
-pub use separator::Separator;
-#[cfg(feature = "separator")]
-pub use separator::SeparatorDirection;
-#[cfg(feature = "separator")]
-pub use separator::SeparatorCharset;
 #[cfg(feature = "select")]
 pub use select::Select;
 #[cfg(feature = "select")]
 pub use select::SelectOption;
-
+#[cfg(feature = "separator")]
+pub use separator::Separator;
+#[cfg(feature = "separator")]
+pub use separator::SeparatorCharset;
+#[cfg(feature = "separator")]
+pub use separator::SeparatorDirection;
+#[cfg(feature = "spinner")]
+pub use spinner::Spinner;
+#[cfg(feature = "spinner")]
+pub use spinner::SpinnerCharset;

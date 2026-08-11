@@ -1,4 +1,4 @@
-use crate::{KeyEvent};
+use crate::KeyEvent;
 use crossterm::event::{KeyCode, KeyModifiers};
 
 pub fn contains_modifier(event: KeyEvent, modifier: KeyModifiers) -> bool {

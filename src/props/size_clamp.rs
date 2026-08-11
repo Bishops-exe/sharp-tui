@@ -9,10 +9,6 @@ pub struct SizeClamp {
 
 impl SizeClamp {
     pub fn new(min: SizeUnit, value: SizeUnit, max: SizeUnit) -> Self {
-        Self {
-            min,
-            value,
-            max
-        }
+        Self { min, value, max }
     }
 }

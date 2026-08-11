@@ -4,11 +4,13 @@ use super::renderer::TerminalRenderer;
 use crate::event::KeyEvent as SharpKeyEvent;
 use crate::event::MouseEvent as SharpMouseEvent;
 use crossterm::cursor::{Hide, Show};
-use crossterm::event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode, KeyEvent, KeyModifiers};
+use crossterm::event::{
+    self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode, KeyEvent, KeyModifiers,
+};
+use crossterm::execute;
 use crossterm::terminal::{
     EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode, size,
 };
-use crossterm::execute;
 use dioxus::core::{Element, Event as DioxusEvent};
 use dioxus::prelude::VirtualDom;
 use std::io::{self, Stdout, Write};
@@ -39,7 +41,7 @@ impl Default for Props {
 fn prelaunch(stdout: &mut Stdout) -> Result<(), io::Error> {
     enable_raw_mode()?;
     execute!(stdout, EnterAlternateScreen, Hide, EnableMouseCapture)?;
-    
+
     Ok(())
 }
 
@@ -59,8 +61,11 @@ fn postlaunch(stdout: &mut Stdout) -> Result<(), io::Error> {
 /// component reactive to that element's layout afterward.
 fn dispatch_pending_mounted(vdom: &mut VirtualDom, renderer: &mut TerminalRenderer) {
     for (id, node_id) in renderer.take_pending_mounted() {
-        vdom.runtime()
-            .handle_event("mounted", DioxusEvent::new(Rc::new(node_id), false).into_any(), id);
+        vdom.runtime().handle_event(
+            "mounted",
+            DioxusEvent::new(Rc::new(node_id), false).into_any(),
+            id,
+        );
     }
 }
 
@@ -72,7 +77,11 @@ fn dispatch_pending_mounted(vdom: &mut VirtualDom, renderer: &mut TerminalRender
 /// Unlike `handle_event` (which sets up the runtime context itself while it runs listeners),
 /// `needs_update` expects a runtime to already be active on the current thread — hence the
 /// explicit `RuntimeGuard` here.
-fn rerender_resized(vdom: &VirtualDom, renderer: &TerminalRenderer, changed: &[(NodeKey, LayoutRect)]) {
+fn rerender_resized(
+    vdom: &VirtualDom,
+    renderer: &TerminalRenderer,
+    changed: &[(NodeKey, LayoutRect)],
+) {
     let scopes = renderer.scopes_for(changed);
     if scopes.is_empty() {
         return;
@@ -150,7 +159,11 @@ fn run_loop(
                 Event::Mouse(mouse_event) => {
                     if let Some(id) = renderer.hit_test(mouse_event.column, mouse_event.row) {
                         let data = Rc::new(SharpMouseEvent::from(mouse_event));
-                        vdom.runtime().handle_event("mouseevent", DioxusEvent::new(data, true).into_any(), id);
+                        vdom.runtime().handle_event(
+                            "mouseevent",
+                            DioxusEvent::new(data, true).into_any(),
+                            id,
+                        );
                     }
                 }
 

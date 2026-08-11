@@ -152,10 +152,13 @@ fn draw_block(
         return;
     }
 
-    let cell = Cell::new(ContentStyle {
-        background_color: Some(bg_color),
-        ..Default::default()
-    }.apply(' '));
+    let cell = Cell::new(
+        ContentStyle {
+            background_color: Some(bg_color),
+            ..Default::default()
+        }
+        .apply(' '),
+    );
 
     for x in rect.first.x..rect.second.x {
         for y in rect.first.y..rect.second.y {

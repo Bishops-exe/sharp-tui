@@ -1,7 +1,7 @@
 use crate::props::overflow::Overflow;
 use crate::render::Apply;
-use yoga::prelude::Point;
 use yoga::Node as YogaNode;
+use yoga::prelude::Point;
 
 #[derive(Default, Eq, PartialEq, Hash, Clone, Copy, Debug)]
 pub struct XYProps<T>
@@ -48,4 +48,3 @@ impl Apply for XYProps<Overflow> {
         yoga.set_overflow(*self.effective());
     }
 }
-

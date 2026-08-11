@@ -9,7 +9,7 @@ pub enum TextWrap {
     TruncateStart,
     TruncateMiddle,
     Truncate,
-    Cut
+    Cut,
 }
 
 impl TextWrap {
@@ -66,12 +66,10 @@ impl TextWrap {
                 Cow::Owned(format!("{}...", &text[..keep]))
             }
 
-            TextWrap::Cut => {
-                match text.char_indices().nth(width) {
-                    None => Cow::Borrowed(text),
-                    Some((byte_idx, _)) => Cow::Owned(text[..byte_idx].to_string()),
-                }
-            }
+            TextWrap::Cut => match text.char_indices().nth(width) {
+                None => Cow::Borrowed(text),
+                Some((byte_idx, _)) => Cow::Owned(text[..byte_idx].to_string()),
+            },
         }
     }
 }

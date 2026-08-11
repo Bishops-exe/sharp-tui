@@ -1,6 +1,6 @@
-use yoga::Justify;
 use crate::render::Apply;
 use crate::wrap;
+use yoga::Justify;
 use yoga::Node as YogaNode;
 
 wrap!(pub JustifyContent => Justify; default Justify::FlexStart);

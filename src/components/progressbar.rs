@@ -35,7 +35,6 @@ impl Default for ProgressBarCharset {
     fn default() -> Self {
         Self::classic()
     }
-
 }
 
 /// Renders exactly `width` characters: `filled` glyphs (start/center/end), then `remaining`

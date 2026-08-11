@@ -1,8 +1,8 @@
+use crate::props::flex_direction::FlexDirection;
 use crate::props::flex_wrap::FlexWrap;
 use crate::props::size_unit::SizeUnit;
 use crate::render::Apply;
 use yoga::Node as YogaNode;
-use crate::props::flex_direction::FlexDirection;
 
 #[derive(Default, Eq, PartialEq, Hash, Clone, Copy, Debug)]
 pub struct Flex {
@@ -14,13 +14,19 @@ pub struct Flex {
 }
 
 impl Flex {
-    pub fn new(grow: usize, shrink: usize, basis: SizeUnit, wrap: FlexWrap, direction: FlexDirection) -> Flex {
+    pub fn new(
+        grow: usize,
+        shrink: usize,
+        basis: SizeUnit,
+        wrap: FlexWrap,
+        direction: FlexDirection,
+    ) -> Flex {
         Self {
             grow,
             shrink,
             basis,
             wrap,
-            direction
+            direction,
         }
     }
 }

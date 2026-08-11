@@ -1,9 +1,8 @@
 use crate::event::MouseEvent;
-use crate::render::{measure_element, NodeId};
+use crate::render::{NodeId, measure_element};
 use crate::{Block, Height, Margin, Overflow, Sides, Width, XYProps};
 use crossterm::event::MouseEventKind;
 use dioxus::prelude::*;
-
 
 #[component]
 pub fn Scrolling(
@@ -14,12 +13,14 @@ pub fn Scrolling(
     /// The current scroll offset. The parent owns this — `Scrolling` never tracks it itself,
     /// only ever reads it and reports the offset the mouse wheel asks for via `on_scroll`, same
     /// as `Input`'s `value`/`on_change`.
-    #[props(default)] scroll: XYProps<u16>,
+    #[props(default)]
+    scroll: XYProps<u16>,
     #[props(default)] on_scroll: EventHandler<XYProps<u16>>,
     /// Fires once, when the viewport itself first has a layout to report. Forwarded from the
     /// inner `Block` so a parent that needs the viewport's own rect (to compute an auto-scroll
     /// offset, say) doesn't have to duplicate this component's layout structure to get it.
-    #[props(default)] on_mounted: EventHandler<NodeId>,
+    #[props(default)]
+    on_mounted: EventHandler<NodeId>,
 ) -> Element {
     let mut viewport = use_signal(|| None::<NodeId>);
     let mut content = use_signal(|| None::<NodeId>);
@@ -40,8 +41,16 @@ pub fn Scrolling(
         _ => (0, 0),
     };
 
-    let x_offset = if lock_scroll.x { 0 } else { scroll.x.min(max_x) };
-    let y_offset = if lock_scroll.y { 0 } else { scroll.y.min(max_y) };
+    let x_offset = if lock_scroll.x {
+        0
+    } else {
+        scroll.x.min(max_x)
+    };
+    let y_offset = if lock_scroll.y {
+        0
+    } else {
+        scroll.y.min(max_y)
+    };
 
     rsx! {
         Block {

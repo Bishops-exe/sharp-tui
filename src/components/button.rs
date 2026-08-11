@@ -1,4 +1,4 @@
-use crate::{no, AlignItem, AlignItems, Block, Border, MouseEvent, Text, BorderCharset};
+use crate::{AlignItem, AlignItems, Block, Border, BorderCharset, MouseEvent, Text, no};
 use crossterm::event::{MouseButton, MouseEventKind};
 use crossterm::style::{ContentStyle, Stylize};
 use dioxus::prelude::*;
@@ -9,7 +9,6 @@ pub fn Button(
     #[props(default)] on_click: EventHandler<()>,
     #[props(default)] disabled: bool,
 ) -> Element {
-
     let style = if disabled {
         ContentStyle::new().dark_grey()
     } else {

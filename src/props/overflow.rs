@@ -1,5 +1,5 @@
-use yoga::Overflow as YGOverflow;
 use crate::wrap;
+use yoga::Overflow as YGOverflow;
 
 wrap!(pub Overflow => YGOverflow; default YGOverflow::Visible );
 

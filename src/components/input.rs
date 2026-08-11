@@ -1,5 +1,5 @@
-use crate::{no, use_key_event, Block, Flex, FlexDirection, KeyEvent, Text, match_key_event};
-use crossterm::event::{KeyCode};
+use crate::{Block, Flex, FlexDirection, KeyEvent, Text, match_key_event, no, use_key_event};
+use crossterm::event::KeyCode;
 use crossterm::style::{ContentStyle, Stylize};
 use dioxus::prelude::*;
 use yoga::FlexDirection as YGFlexDirection;
@@ -130,8 +130,10 @@ pub fn Input(
                 // its borrow guard open across the `write_unchecked` calls below and panic.
                 let anchor_pos = *anchor.peek();
                 if let Some((start, end)) = selection_range(pos, anchor_pos) {
-                    let new_value: String =
-                        handler_chars[..start].iter().chain(&handler_chars[end..]).collect();
+                    let new_value: String = handler_chars[..start]
+                        .iter()
+                        .chain(&handler_chars[end..])
+                        .collect();
                     *anchor.write_unchecked() = None;
                     *cursor.write_unchecked() = start;
                     on_change.call(Box::from(new_value.as_str()));
@@ -141,8 +143,10 @@ pub fn Input(
                     } else {
                         pos - 1
                     };
-                    let new_value: String =
-                        handler_chars[..start].iter().chain(&handler_chars[pos..]).collect();
+                    let new_value: String = handler_chars[..start]
+                        .iter()
+                        .chain(&handler_chars[pos..])
+                        .collect();
                     *anchor.write_unchecked() = None;
                     *cursor.write_unchecked() = start;
                     on_change.call(Box::from(new_value.as_str()));
@@ -151,8 +155,10 @@ pub fn Input(
             KeyCode::Delete => {
                 let anchor_pos = *anchor.peek();
                 if let Some((start, end)) = selection_range(pos, anchor_pos) {
-                    let new_value: String =
-                        handler_chars[..start].iter().chain(&handler_chars[end..]).collect();
+                    let new_value: String = handler_chars[..start]
+                        .iter()
+                        .chain(&handler_chars[end..])
+                        .collect();
                     *anchor.write_unchecked() = None;
                     *cursor.write_unchecked() = start;
                     on_change.call(Box::from(new_value.as_str()));
@@ -162,8 +168,10 @@ pub fn Input(
                     } else {
                         pos + 1
                     };
-                    let new_value: String =
-                        handler_chars[..pos].iter().chain(&handler_chars[end..]).collect();
+                    let new_value: String = handler_chars[..pos]
+                        .iter()
+                        .chain(&handler_chars[end..])
+                        .collect();
                     on_change.call(Box::from(new_value.as_str()));
                 }
             }
