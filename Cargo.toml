@@ -2,6 +2,7 @@
 name = "sharp-tui"
 version = "1.0.0"
 edition = "2024"
+description = "Ink but for rust!"
 
 [features]
 default = ["all"]
