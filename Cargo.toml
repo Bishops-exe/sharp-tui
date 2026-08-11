@@ -3,6 +3,10 @@ name = "sharp-tui"
 version = "1.0.0"
 edition = "2024"
 description = "Ink but for rust!"
+license = "LGPLv3"
+repository = "https://github.com/bishops-exe/sharp-tui"
+readme = "README.md"
+homepage = "https://github.com/bishops-exe/sharp-tui#readme"
 
 [features]
 default = ["all"]
