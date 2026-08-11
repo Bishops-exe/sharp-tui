@@ -1,4 +1,15 @@
-# sharp-tui
+<h1 align="center">Sharp-tui</h1>
+
+<div align="center">
+    <strong>Ink but for rust!</strong>
+</div>
+<br>
+<div align="center">
+    <a href="https://github.com/Bishops-exe/sharp-tui/blob/main/LICENSE" title="View license!"><img alt="License" src="https://img.shields.io/github/license/bishops-exe/portproc?color=880088"/></a>
+    <img alt="Static Badge" src="https://img.shields.io/badge/unsafe-forbidden-008800">
+    <a href="https://github.com/Bishops-exe/sharp-tui/pulls" title="Open a pull request!"><img alt="Open a pull request!" src="https://img.shields.io/badge/PR-create one!-008800"></a>
+    <a href="https://github.com/Bishops-exe/sharp-tui/issues/new" title="Report a bug!"><img alt="Report a bug!" src="https://img.shields.io/badge/Bug%3F-report_it!-880000"></a>
+</div>
 
 A terminal UI framework that renders [Dioxus](https://dioxuslabs.com/) components to the terminal, using [`yoga`](https://crates.io/crates/yoga) for flexbox layout and [`crossterm`](https://crates.io/crates/crossterm) for terminal I/O.
 
@@ -58,7 +69,3 @@ Each component lives behind its own feature flag (all enabled by default via the
 ## Layout
 
 Layout props (`Margin`, `Padding`, `Width`, `Height`, `Flex`, `AlignItems`, `Border`, etc.) mirror Yoga's flexbox model and are applied directly to `Block`/`Text` nodes — see `src/props` for the full set.
-
-## Status
-
-Early / experimental — APIs are still settling.
