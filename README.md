@@ -46,10 +46,10 @@ fn main() -> std::io::Result<()> {
 }
 ```
 
-See [`examples/hello.rs`](examples/hello.rs) for a fuller demo exercising every component. Run it with:
+See [`examples/example.rs`](examples/hello.rs) for a fuller demo exercising every component. Run it with:
 
 ```sh
-cargo run --example hello
+cargo run --example example
 ```
 
 ## Components
