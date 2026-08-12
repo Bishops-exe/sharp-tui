@@ -1,12 +1,14 @@
-use crate::{measure_element, no, use_key_event, Block, Height, KeyEvent, NodeId, Width, XYProps, Text};
+use crate::{
+    Block, Height, KeyEvent, NodeId, Text, Width, XYProps, measure_element, no, use_key_event,
+};
 use crossterm::event::KeyCode;
 use crossterm::style::{ContentStyle, Stylize};
 use dioxus::prelude::*;
 
+use crate::components::Scrolling;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
-use crate::components::Scrolling;
 
 /// Shared state a `Select` hands down to its `SelectOption` children: which index is currently
 /// highlighted, how many options are mounted (for wraparound), and each option's node id (so
@@ -16,7 +18,7 @@ struct SelectState {
     selected: Signal<u32>,
     count: Signal<u32>,
     nodes: Rc<RefCell<HashMap<u32, NodeId>>>,
-    clicking_disabled: bool
+    clicking_disabled: bool,
 }
 
 /// A keyboard-navigable list. Wrap `SelectOption { index, .. }` children in it — `index` should
@@ -29,7 +31,8 @@ pub fn Select(
     on_enter: EventHandler<u32>,
     /// Whether this `Select` should react to `Up`/`Down`/`Enter`. Keep this in sync with whatever
     /// your app considers "focused" — e.g. only the active field in a form.
-    #[props(default)] active: bool,
+    #[props(default)]
+    active: bool,
     #[props(default)] width: Width,
     #[props(default)] height: Height,
     #[props(default)] disable_clicking: bool,
