@@ -5,7 +5,7 @@
 </div>
 <br>
 <div align="center">
-    <a href="https://github.com/Bishops-exe/sharp-tui/blob/main/LICENSE" title="View license!"><img alt="License" src="https://img.shields.io/github/license/bishops-exe/portproc?color=880088"/></a>
+    <a href="https://github.com/Bishops-exe/sharp-tui/blob/main/LICENSE" title="View license!"><img alt="License" src="https://img.shields.io/github/license/bishops-exe/sharp-tui?color=880088"/></a>
     <img alt="Static Badge" src="https://img.shields.io/badge/unsafe-forbidden-008800">
     <a href="https://github.com/Bishops-exe/sharp-tui/pulls" title="Open a pull request!"><img alt="Open a pull request!" src="https://img.shields.io/badge/PR-create one!-008800"></a>
     <a href="https://github.com/Bishops-exe/sharp-tui/issues/new" title="Report a bug!"><img alt="Report a bug!" src="https://img.shields.io/badge/Bug%3F-report_it!-880000"></a>
