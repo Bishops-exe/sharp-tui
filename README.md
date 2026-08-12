@@ -46,7 +46,7 @@ fn main() -> std::io::Result<()> {
 }
 ```
 
-See [`examples/example.rs`](examples/hello.rs) for a fuller demo exercising every component. Run it with:
+See [`examples/example.rs`](examples/example.rs) for a fuller demo exercising every component. Run it with:
 
 ```sh
 cargo run --example example
@@ -56,16 +56,16 @@ cargo run --example example
 
 Each component lives behind its own feature flag (all enabled by default via the `all` feature):
 
-| Component | Feature | Description |
-|---|---|---|
-| `Block` / `Text` | *(always available)* | The core layout/text primitives everything else is built from. |
-| `Button` | `button` | A clickable, focusable box with a `disabled` state. |
-| `Input` | `input` | A single-line text field with cursor movement and selection. |
-| `ProgressBar` | `progress-bar` | A percentage-driven progress bar with swappable charsets. |
-| `Scrolling` | `scrolling` | A scrollable viewport; scroll offset is controlled by the parent (`scroll` + `on_scroll`). |
-| `Spinner` | `spinner` | An animated loading indicator with swappable charsets. |
-| `Separator` | `separator` | A horizontal or vertical rule that fills its container. |
-| `Select` / `SelectOption` | `select` | A keyboard-navigable list (Up/Down to move, Enter to submit) that auto-scrolls the highlighted option into view. |
+| Component                 | Feature              | Description                                                                                                      |
+|---------------------------|----------------------|------------------------------------------------------------------------------------------------------------------|
+| `Block` / `Text`          | *(always available)* | The core layout/text primitives everything else is built from.                                                   |
+| `Button`                  | `button`             | A clickable, focusable box with a `disabled` state.                                                              |
+| `Input`                   | `input`              | A single-line text field with cursor movement and selection.                                                     |
+| `ProgressBar`             | `progress-bar`       | A percentage-driven progress bar with swappable charsets.                                                        |
+| `Scrolling`               | `scrolling`          | A scrollable viewport; scroll offset is controlled by the parent (`scroll` + `on_scroll`).                       |
+| `Spinner`                 | `spinner`            | An animated loading indicator with swappable charsets.                                                           |
+| `Separator`               | `separator`          | A horizontal or vertical rule that fills its container.                                                          |
+| `Select` / `SelectOption` | `select`             | A keyboard-navigable list (Up/Down to move, Enter to submit) that auto-scrolls the highlighted option into view. |
 
 ## Layout
 
