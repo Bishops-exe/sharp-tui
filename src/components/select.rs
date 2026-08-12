@@ -1,13 +1,12 @@
-use crate::components::Scrolling;
-use crate::{
-    Block, Height, KeyEvent, NodeId, Text, Width, XYProps, measure_element, no, use_key_event,
-};
+use crate::{measure_element, no, use_key_event, Block, Height, KeyEvent, NodeId, Width, XYProps, Text};
 use crossterm::event::KeyCode;
 use crossterm::style::{ContentStyle, Stylize};
 use dioxus::prelude::*;
+
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
+use crate::components::Scrolling;
 
 /// Shared state a `Select` hands down to its `SelectOption` children: which index is currently
 /// highlighted, how many options are mounted (for wraparound), and each option's node id (so
@@ -17,6 +16,7 @@ struct SelectState {
     selected: Signal<u32>,
     count: Signal<u32>,
     nodes: Rc<RefCell<HashMap<u32, NodeId>>>,
+    clicking_disabled: bool
 }
 
 /// A keyboard-navigable list. Wrap `SelectOption { index, .. }` children in it — `index` should
@@ -29,10 +29,10 @@ pub fn Select(
     on_enter: EventHandler<u32>,
     /// Whether this `Select` should react to `Up`/`Down`/`Enter`. Keep this in sync with whatever
     /// your app considers "focused" — e.g. only the active field in a form.
-    #[props(default)]
-    active: bool,
+    #[props(default)] active: bool,
     #[props(default)] width: Width,
     #[props(default)] height: Height,
+    #[props(default)] disable_clicking: bool,
 ) -> Element {
     let selected = use_signal(|| 0u32);
     let count = use_signal(|| 0u32);
@@ -42,6 +42,7 @@ pub fn Select(
         selected,
         count,
         nodes: nodes.clone(),
+        clicking_disabled: disable_clicking,
     });
 
     use_key_event(move |e: KeyEvent| {
@@ -119,7 +120,7 @@ pub fn SelectOption(
     #[props(default)] style: ContentStyle,
 ) -> Element {
     let state: SelectState = use_context();
-    let selected = state.selected;
+    let mut selected = state.selected;
     let mut count = state.count;
     let nodes = state.nodes;
 
@@ -137,6 +138,16 @@ pub fn SelectOption(
 
     rsx! {
         Block {
+            on_mouse_event: move |e: crate::MouseEvent| {
+                if state.clicking_disabled {
+                    return;
+                }
+                if !e.kind.is_down() {
+                    return
+                }
+
+                selected.set(index);
+            },
             on_mounted: move |id: NodeId| {
                 nodes.borrow_mut().insert(index, id);
             },
