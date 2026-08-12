@@ -157,7 +157,7 @@ fn run_loop(
                     dispatch_key_event(vdom, renderer, SharpKeyEvent::from(key));
                 }
                 Event::Mouse(mouse_event) => {
-                    if let Some(id) = renderer.hit_test(mouse_event.column, mouse_event.row) {
+                    if let Some(id) = renderer.hit_test(mouse_event.into()) {
                         let data = Rc::new(SharpMouseEvent::from(mouse_event));
                         vdom.runtime().handle_event(
                             "mouseevent",

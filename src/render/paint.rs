@@ -514,43 +514,47 @@ fn flush_diff(out: &mut impl Write, old: &Buffer, new: &Buffer) -> io::Result<()
 }
 
 /// Depth-first search for the topmost `Block` under `(col, row)`. Later siblings paint over
-/// earlier ones (see `paint_node`), so they're checked first.
+/// earlier ones (see `paint_node`), so they're checked first. `clip`, when present, mirrors the
+/// clip rect `paint_node` would have applied when painting this node — a point outside it landed
+/// on content that an ancestor's `overflow: hidden`/`scroll` clipped away, so it can't be a hit.
 fn hit_test_node(
     arena: &Arena,
     key: NodeKey,
-    origin_x: f32,
-    origin_y: f32,
-    col: f32,
-    row: f32,
+    origin: Point,
+    point: Point,
+    clip: Option<LayoutRect>,
 ) -> Option<NodeKey> {
     let node = arena.get(key);
     let layout = node.yoga()?.get_layout();
-    let x = origin_x + layout.left();
-    let y = origin_y + layout.top();
-    let (w, h) = (layout.width(), layout.height());
+    let rect = LayoutRect::from(layout).translate(origin);
 
-    for &child in node.children().iter().rev() {
-        if let Some(hit) = hit_test_node(arena, child, x, y, col, row) {
+    let child_clip = if let RealNode::Block {
+        border, overflow, ..
+    } = node
+        && overflow.clips()
+    {
+        let inner = rect.inset(border.get_inset());
+        Some(clip.map(|outer| outer.intersect(inner)).unwrap_or(inner))
+    } else {
+        clip
+    };
+
+    for &child in node.children().iter() {
+        if let Some(hit) = hit_test_node(arena, child, rect.first, point, child_clip) {
             return Some(hit);
         }
     }
 
-    let inside = col >= x && col < x + w && row >= y && row < y + h;
+    let inside = rect.contains(point) && clip.is_none_or(|c| c.contains(point));
     (inside && matches!(node, RealNode::Block { .. })).then_some(key)
 }
 
 /// Finds the topmost `Block` under the terminal cell `(column, row)`, using each node's layout
 /// as of the last `paint` call.
-pub(super) fn hit_test(arena: &Arena, root: NodeKey, column: u16, row: u16) -> Option<NodeKey> {
-    let root_node = arena.get(root);
-    let layout = root_node.yoga()?.get_layout();
-    let (x, y) = (layout.left(), layout.top());
-    let (col, row) = (column as f32, row as f32);
-    root_node
-        .children()
-        .iter()
-        .rev()
-        .find_map(|&child| hit_test_node(arena, child, x, y, col, row))
+pub(super) fn hit_test(arena: &Arena, root: NodeKey, point: Point) -> Option<NodeKey> {
+    let layout = arena.get(root).yoga()?.get_layout();
+    let origin = LayoutRect::from(layout).first;
+    hit_test_node(arena, root, origin, point, None)
 }
 
 pub(super) fn paint(

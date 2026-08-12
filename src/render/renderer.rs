@@ -120,8 +120,8 @@ impl TerminalRenderer {
 
     /// Finds the topmost `Block` under the given terminal cell, and the `ElementId` mouse
     /// events on it should be dispatched to.
-    pub(super) fn hit_test(&self, column: u16, row: u16) -> Option<ElementId> {
-        let key = paint::hit_test(&self.arena, self.root, column, row)?;
+    pub(super) fn hit_test(&self, point: Point) -> Option<ElementId> {
+        let key = paint::hit_test(&self.arena, self.root, point)?;
         self.id_to_nodekey.get_by_right(&key).copied()
     }
 

@@ -1,4 +1,5 @@
 use super::arena::NodeKey;
+use crossterm::event::MouseEvent;
 use dioxus::core::{ScopeId, current_scope_id};
 use std::cell::RefCell;
 use std::collections::HashMap;
@@ -11,6 +12,16 @@ pub struct Point {
     pub x: i32,
     pub y: i32,
 }
+
+impl From<MouseEvent> for Point {
+    fn from(mouse: MouseEvent) -> Self {
+        Self {
+            x: mouse.column as i32,
+            y: mouse.row as i32,
+        }
+    }
+}
+
 impl Point {
     pub fn new(x: i32, y: i32) -> Self {
         Self { x, y }
