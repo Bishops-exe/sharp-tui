@@ -22,7 +22,7 @@ Write your TUI the same way you'd write a Dioxus app — components, `rsx!`, sig
 use dioxus::prelude::*;
 use sharp_tui::components::{Button, Input};
 use sharp_tui::props::*;
-use sharp_tui::{Block, Props, Text, launch};
+use sharp_tui::{Block, Props, Text, launch, no};
 
 fn app() -> Element {
     let mut count = use_signal(|| 0u8);
