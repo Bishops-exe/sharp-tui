@@ -75,6 +75,7 @@ pub fn Input(
     active: bool,
     #[props(default)] placeholder: String,
     #[props(default)] style: ContentStyle,
+    mask_character: Option<char>,
 ) -> Element {
     let char_count = value.chars().count();
     let cursor = use_signal(move || char_count);
@@ -209,8 +210,14 @@ pub fn Input(
             cursor_style,
         )
     } else {
+        let visible_chars = if let Some(char) = mask_character {
+            chars.iter().map(|_| char).collect()
+        } else {
+            chars
+        };
+
         build_runs(
-            &chars,
+            &visible_chars,
             cursor().min(len),
             selection,
             style,

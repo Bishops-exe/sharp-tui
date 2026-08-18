@@ -18,6 +18,8 @@ fn app() -> Element {
     let mut input_value = use_signal(|| String::from(""));
     let mut scroll = use_signal(|| XYProps::<u16>::both(0));
 
+    let mut is_masked = use_signal(|| false);
+
     rsx! {
         Scrolling {
             scroll: scroll(),
@@ -61,7 +63,13 @@ fn app() -> Element {
                     value: input_value(),
                     on_change: move |x: Box<str>| {
                         input_value.set(x.into());
-                    }
+                    },
+                    mask_character: is_masked().then_some('*')
+                }
+                Button {
+                    on_click: move || is_masked.set(!is_masked()),
+
+                    "Toggle mask"
                 }
             }
             Block {
