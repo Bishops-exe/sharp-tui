@@ -48,12 +48,13 @@ fn build_runs(
     normal_style: ContentStyle,
     selection_style: ContentStyle,
     cursor_style: ContentStyle,
+    is_active: bool,
 ) -> Vec<(ContentStyle, String)> {
     let total = chars.len().max(cursor + 1);
     let mut runs: Vec<(ContentStyle, String)> = Vec::new();
     for i in 0..total {
         let ch = chars.get(i).copied().unwrap_or(' ');
-        let style = if i == cursor {
+        let style = if i == cursor && is_active {
             cursor_style
         } else if selection.is_some_and(|(start, end)| i >= start && i < end) {
             selection_style
@@ -208,6 +209,7 @@ pub fn Input(
             ContentStyle::new().dark_grey(),
             selection_style,
             cursor_style,
+            active
         )
     } else {
         let visible_chars = if let Some(char) = mask_character {
@@ -223,6 +225,7 @@ pub fn Input(
             style,
             selection_style,
             cursor_style,
+            active
         )
     };
 
