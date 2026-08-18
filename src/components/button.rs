@@ -8,12 +8,15 @@ pub fn Button(
     #[props(default)] children: Element,
     #[props(default)] on_click: EventHandler<()>,
     #[props(default)] disabled: bool,
+    border: Option<Border>,
 ) -> Element {
     let style = if disabled {
         ContentStyle::new().dark_grey()
     } else {
         no!()
     };
+
+    let border = border.unwrap_or_else(|| Border::new(Some(BorderCharset::double())));
 
     rsx! {
         Block {
@@ -25,7 +28,7 @@ pub fn Button(
                      on_click.call(());
                 };
             },
-            border: Border::new(Some(BorderCharset::double())),
+            border: border,
             align_items: AlignItems::new(AlignItem::Center),
             Text {
                 style,
