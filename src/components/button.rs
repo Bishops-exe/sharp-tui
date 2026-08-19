@@ -1,6 +1,6 @@
 use crate::{
-    match_key_event, no, use_key_event, AlignItem, AlignItems, Block, Border, BorderCharset, MouseEvent,
-    Text,
+    AlignItem, AlignItems, Block, Border, BorderCharset, MouseEvent, Text, match_key_event, no,
+    use_key_event,
 };
 use crossterm::event::{MouseButton, MouseEventKind};
 use crossterm::style::{ContentStyle, Stylize};
