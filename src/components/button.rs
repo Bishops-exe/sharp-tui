@@ -1,6 +1,6 @@
 use crate::{
-    AlignItem, AlignItems, Block, Border, BorderCharset, MouseEvent, Text, match_key_event, no,
-    use_key_event,
+    match_key_event, no, use_key_event, AlignItem, AlignItems, Block, Border, BorderCharset, MouseEvent,
+    Text,
 };
 use crossterm::event::{MouseButton, MouseEventKind};
 use crossterm::style::{ContentStyle, Stylize};
@@ -18,7 +18,9 @@ pub fn Button(
 ) -> Element {
     let enter = use_signal(|| false);
     let space = use_signal(|| false);
+
     let click = use_signal(|| false);
+    let prev_click_value = use_signal(|| false);
 
     let style = if disabled {
         ContentStyle::new().dark_grey()
@@ -48,6 +50,13 @@ pub fn Button(
         } else if match_key_event!(ev, Enter) {
             *enter.write_unchecked() = value
         }
+    });
+
+    use_effect(move || {
+        if click() != prev_click_value() && click() {
+            on_click.call(());
+        }
+        *prev_click_value.write_unchecked() = click()
     });
 
     rsx! {
