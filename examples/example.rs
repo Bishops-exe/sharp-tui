@@ -46,7 +46,7 @@ fn app() -> Element {
 
                 Button {
                     on_click: move || {
-                        count.set(count().saturating_sub(1))
+                        count.set(count().saturating_sub(1));
                     },
                     active: true,
 
@@ -130,6 +130,7 @@ fn main() -> std::io::Result<()> {
         Props {
             ctrl_c: true,
             event_poll_speed: Duration::from_millis(10),
+            support_mouse: true,
         },
     )
 }

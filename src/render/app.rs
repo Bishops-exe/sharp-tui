@@ -25,6 +25,7 @@ fn is_ctrl_c(key: &SharpKeyEvent) -> bool {
 pub struct Props {
     pub event_poll_speed: Duration,
     pub ctrl_c: bool,
+    pub support_mouse: bool,
 }
 
 impl Default for Props {
@@ -32,23 +33,29 @@ impl Default for Props {
         Self {
             event_poll_speed: Duration::from_millis(50),
             ctrl_c: false,
+            support_mouse: false,
         }
     }
 }
 
 #[inline]
-fn prelaunch(stdout: &mut Stdout) -> Result<(), io::Error> {
+fn prelaunch(stdout: &mut Stdout, props: &Props) -> Result<(), io::Error> {
     enable_raw_mode()?;
-    execute!(stdout, EnterAlternateScreen, Hide, EnableMouseCapture)?;
+    execute!(stdout, EnterAlternateScreen, Hide)?;
+    if props.support_mouse {
+        execute!(stdout, EnableMouseCapture)?;
+    }
 
     Ok(())
 }
 
 #[inline]
-fn postlaunch(stdout: &mut Stdout) -> Result<(), io::Error> {
-    execute!(stdout, LeaveAlternateScreen, Show, DisableMouseCapture)?;
-
+fn postlaunch(stdout: &mut Stdout, props: &Props) -> Result<(), io::Error> {
     disable_raw_mode()?;
+    execute!(stdout, LeaveAlternateScreen, Show)?;
+    if props.support_mouse {
+        execute!(stdout, DisableMouseCapture)?;
+    }
 
     Ok(())
 }
@@ -123,15 +130,15 @@ pub fn launch(app: fn() -> Element, props: Props) -> io::Result<()> {
 
     let mut stdout = io::stdout();
 
-    prelaunch(&mut stdout)?;
+    prelaunch(&mut stdout, &props)?;
     let prev_hook = std::panic::take_hook();
     std::panic::set_hook(Box::new(move |info| {
-        let _ = postlaunch(&mut io::stdout());
+        let _ = postlaunch(&mut io::stdout(), &props);
         prev_hook(info);
     }));
 
     let result = run_loop(&props, &mut vdom, &mut renderer, &mut stdout);
-    postlaunch(&mut stdout)?;
+    postlaunch(&mut stdout, &props)?;
     drop(std::panic::take_hook());
 
     result
