@@ -7,6 +7,7 @@ mod macros;
 pub mod props;
 mod render;
 mod tags;
+pub mod utils;
 
 pub use crossterm;
 pub use event::{KeyEvent, MouseEvent};
