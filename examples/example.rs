@@ -131,6 +131,8 @@ fn main() -> std::io::Result<()> {
             ctrl_c: true,
             event_poll_speed: Duration::from_millis(10),
             support_mouse: true,
+            throttle_while_unfocused: true,
+            unfocused_event_poll_speed: Duration::from_millis(500),
         },
     )
 }

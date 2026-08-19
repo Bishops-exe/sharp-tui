@@ -5,7 +5,9 @@ use crate::event::KeyEvent as SharpKeyEvent;
 use crate::event::MouseEvent as SharpMouseEvent;
 use crate::match_key_event;
 use crossterm::cursor::{Hide, Show};
-use crossterm::event::{self, DisableMouseCapture, EnableMouseCapture, Event};
+use crossterm::event::{
+    self, DisableFocusChange, DisableMouseCapture, EnableFocusChange, EnableMouseCapture, Event,
+};
 use crossterm::execute;
 use crossterm::terminal::{
     EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode, size,
@@ -26,14 +28,18 @@ pub struct Props {
     pub event_poll_speed: Duration,
     pub ctrl_c: bool,
     pub support_mouse: bool,
+    pub throttle_while_unfocused: bool,
+    pub unfocused_event_poll_speed: Duration,
 }
 
 impl Default for Props {
     fn default() -> Self {
         Self {
             event_poll_speed: Duration::from_millis(50),
+            unfocused_event_poll_speed: Duration::from_millis(500),
             ctrl_c: false,
             support_mouse: false,
+            throttle_while_unfocused: true,
         }
     }
 }
@@ -45,6 +51,9 @@ fn prelaunch(stdout: &mut Stdout, props: &Props) -> Result<(), io::Error> {
     if props.support_mouse {
         execute!(stdout, EnableMouseCapture)?;
     }
+    if props.throttle_while_unfocused {
+        execute!(stdout, EnableFocusChange)?;
+    }
 
     Ok(())
 }
@@ -55,6 +64,9 @@ fn postlaunch(stdout: &mut Stdout, props: &Props) -> Result<(), io::Error> {
     execute!(stdout, LeaveAlternateScreen, Show)?;
     if props.support_mouse {
         execute!(stdout, DisableMouseCapture)?;
+    }
+    if props.throttle_while_unfocused {
+        execute!(stdout, DisableFocusChange)?;
     }
 
     Ok(())
@@ -152,9 +164,16 @@ fn run_loop(
 ) -> io::Result<()> {
     let mut redraw = true;
     let (mut width, mut height) = size()?;
+    let mut focused = true;
 
     loop {
-        if event::poll(props.event_poll_speed)? {
+        let poll_speed = if props.throttle_while_unfocused && !focused {
+            props.unfocused_event_poll_speed
+        } else {
+            props.event_poll_speed
+        };
+
+        if event::poll(poll_speed)? {
             match event::read()? {
                 Event::Key(key) if props.ctrl_c && is_ctrl_c(&key.into()) => {
                     return Ok(());
@@ -177,6 +196,13 @@ fn run_loop(
                     width = w;
                     height = h;
                     redraw = true;
+                }
+                Event::FocusGained => {
+                    focused = true;
+                    redraw = true;
+                }
+                Event::FocusLost => {
+                    focused = false;
                 }
                 _ => {}
             }
