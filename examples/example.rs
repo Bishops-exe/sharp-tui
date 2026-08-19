@@ -39,6 +39,7 @@ fn app() -> Element {
                     on_click: move || {
                         count.set(count().saturating_add(1).min(100))
                     },
+                    active: false,
 
                     "Increment"
                 }
@@ -47,6 +48,7 @@ fn app() -> Element {
                     on_click: move || {
                         count.set(count().saturating_sub(1))
                     },
+                    active: true,
 
                     "Decrement"
 
@@ -70,11 +72,13 @@ fn app() -> Element {
                 }
                 Button {
                     on_click: move || is_masked.set(!is_masked()),
+                    active: false,
 
                     "Toggle mask"
                 }
                 Button {
                     on_click: move || is_active.set(!is_active()),
+                    active: false,
 
                     "Toggle active"
                 }
