@@ -1,4 +1,4 @@
-use crate::{AlignItem, AlignItems, Block, Border, BorderCharset, MouseEvent, Text, no};
+use crate::{AlignItem, AlignItems, Block, Border, BorderCharset, MouseEvent, Text};
 use crossterm::event::{MouseButton, MouseEventKind};
 use crossterm::style::{ContentStyle, Stylize};
 use dioxus::prelude::*;
@@ -10,11 +10,9 @@ pub fn Button(
     #[props(default)] disabled: bool,
     border: Option<Border>,
 ) -> Element {
-    let style = if disabled {
-        ContentStyle::new().dark_grey()
-    } else {
-        no!()
-    };
+    let style = disabled
+        .then(|| ContentStyle::new().dark_grey())
+        .unwrap_or_default();
 
     let border = border.unwrap_or_else(|| Border::new(Some(BorderCharset::double())));
 
