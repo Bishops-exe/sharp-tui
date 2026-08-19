@@ -1628,7 +1628,7 @@ dependencies = [
 
 [[package]]
 name = "sharp-tui"
-version = "1.6.1"
+version = "1.7.0"
 dependencies = [
  "bidimap",
  "crossterm",
