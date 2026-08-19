@@ -3,13 +3,12 @@ use super::mounted::LayoutRect;
 use super::renderer::TerminalRenderer;
 use crate::event::KeyEvent as SharpKeyEvent;
 use crate::event::MouseEvent as SharpMouseEvent;
+use crate::match_key_event;
 use crossterm::cursor::{Hide, Show};
-use crossterm::event::{
-    self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode, KeyEvent, KeyModifiers,
-};
+use crossterm::event::{self, DisableMouseCapture, EnableMouseCapture, Event};
 use crossterm::execute;
 use crossterm::terminal::{
-    EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode, size,
+    disable_raw_mode, enable_raw_mode, size, EnterAlternateScreen, LeaveAlternateScreen,
 };
 use dioxus::core::{Element, Event as DioxusEvent};
 use dioxus::prelude::VirtualDom;
@@ -18,8 +17,8 @@ use std::rc::Rc;
 use std::time::Duration;
 
 #[inline]
-fn is_ctrl_c(key: &KeyEvent) -> bool {
-    key.code == KeyCode::Char('c') && key.modifiers.contains(KeyModifiers::CONTROL)
+fn is_ctrl_c(key: &SharpKeyEvent) -> bool {
+    match_key_event!(*key, Ctrl, 'c')
 }
 
 #[derive(Eq, PartialEq, Hash, Clone, Copy, Debug)]
@@ -150,7 +149,7 @@ fn run_loop(
     loop {
         if event::poll(props.event_poll_speed)? {
             match event::read()? {
-                Event::Key(key) if props.ctrl_c && is_ctrl_c(&key) => {
+                Event::Key(key) if props.ctrl_c && is_ctrl_c(&key.into()) => {
                     return Ok(());
                 }
                 Event::Key(key) => {
