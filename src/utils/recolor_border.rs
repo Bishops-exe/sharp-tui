@@ -6,7 +6,7 @@ pub fn recolor_border(charset: BorderCharset, style: Option<ContentStyle>) -> Bo
         return charset;
     };
 
-    let mut charset = charset.clone();
+    let mut charset = charset;
 
     for i in [
         &mut charset.top,

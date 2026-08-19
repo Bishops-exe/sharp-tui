@@ -76,7 +76,7 @@ pub fn Separator(
             flex: Flex::new(1, no!(), no!(), no!(), no!()),
             Text {
                 style,
-                "{text}"
+                {text}
             }
         }
     }

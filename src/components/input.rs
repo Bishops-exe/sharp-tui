@@ -236,7 +236,7 @@ pub fn Input(
                 Text {
                     key: "{i}",
                     style: run_style,
-                    "{text}"
+                    {text}
                 }
             }
         }
