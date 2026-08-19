@@ -209,7 +209,7 @@ pub fn Input(
             ContentStyle::new().dark_grey(),
             selection_style,
             cursor_style,
-            active
+            active,
         )
     } else {
         let visible_chars = if let Some(char) = mask_character {
@@ -225,7 +225,7 @@ pub fn Input(
             style,
             selection_style,
             cursor_style,
-            active
+            active,
         )
     };
 
