@@ -7,7 +7,7 @@ pub fn recolor_border(charset: BorderCharset, style: Option<ContentStyle>) -> Bo
     };
 
     let mut charset = charset.clone();
-    
+
     for i in [
         &mut charset.top,
         &mut charset.bottom,
@@ -19,7 +19,7 @@ pub fn recolor_border(charset: BorderCharset, style: Option<ContentStyle>) -> Bo
         &mut charset.bottom_left,
     ] {
         *i = Cell::new(StyledContent::new(style, *i.content()))
-    };
-    
+    }
+
     charset
 }
